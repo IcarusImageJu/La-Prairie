@@ -1,0 +1,237 @@
+[
+    {
+        "id": "e81a1bd5.1a5588",
+        "type": "tab",
+        "label": "MoisturizeMe",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "90ff12ec.726e9",
+        "type": "mongodb out",
+        "z": "e81a1bd5.1a5588",
+        "mongodb": "463a50e3.7546d",
+        "name": "Save Values DB",
+        "collection": "values",
+        "payonly": true,
+        "upsert": true,
+        "multi": false,
+        "operation": "store",
+        "x": 720,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "16db9ddc.fedb12",
+        "type": "mqtt in",
+        "z": "e81a1bd5.1a5588",
+        "name": "Moisturizers Values MQTT",
+        "topic": "MoisturizeMe/values/#",
+        "qos": "0",
+        "datatype": "json",
+        "broker": "e5d65b2b.e8ca58",
+        "x": 190,
+        "y": 300,
+        "wires": [
+            [
+                "22607ec3.727be2"
+            ]
+        ]
+    },
+    {
+        "id": "22607ec3.727be2",
+        "type": "function",
+        "z": "e81a1bd5.1a5588",
+        "name": "Create values object",
+        "func": "const topicSplit = msg.topic.split('/');\nconst plant = topicSplit[topicSplit.length - 1];\n\nmsg.payload = {value: msg.payload, plant, date: + new Date()};\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 460,
+        "y": 300,
+        "wires": [
+            [
+                "90ff12ec.726e9"
+            ]
+        ]
+    },
+    {
+        "id": "264af234.5cc16e",
+        "type": "mqtt in",
+        "z": "e81a1bd5.1a5588",
+        "name": "Moisturizers Controller States MQTT",
+        "topic": "MoisturizeMe/controllers/states/#",
+        "qos": "0",
+        "datatype": "json",
+        "broker": "e5d65b2b.e8ca58",
+        "x": 160,
+        "y": 380,
+        "wires": [
+            [
+                "5def3446.a63fec",
+                "987e7efc.8bf88"
+            ]
+        ]
+    },
+    {
+        "id": "5def3446.a63fec",
+        "type": "function",
+        "z": "e81a1bd5.1a5588",
+        "name": "Create states object",
+        "func": "const topicSplit = msg.topic.split('/');\nconst _id = topicSplit[topicSplit.length - 1];\n\nmsg.payload = {...msg.payload, date: + new Date()};\nmsg.query = {_id};\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 460,
+        "y": 380,
+        "wires": [
+            [
+                "29f08e0a.fc5432"
+            ]
+        ]
+    },
+    {
+        "id": "29f08e0a.fc5432",
+        "type": "mongodb out",
+        "z": "e81a1bd5.1a5588",
+        "mongodb": "463a50e3.7546d",
+        "name": "Save Controller State DB",
+        "collection": "controllers",
+        "payonly": false,
+        "upsert": true,
+        "multi": false,
+        "operation": "update",
+        "x": 750,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "987e7efc.8bf88",
+        "type": "function",
+        "z": "e81a1bd5.1a5588",
+        "name": "Check if Controller is online",
+        "func": "const topicSplit = msg.topic.split('/');\nconst _id = topicSplit[topicSplit.length - 1];\nconst reason = topicSplit[topicSplit.length - 2];\n\nif(reason === 'states'){\n    const isOnline = msg.payload.online;\n    if(isOnline) {\n        msg.limit = 1;\n        msg.payload = {_id}\n        return msg;\n    }\n}",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 480,
+        "y": 460,
+        "wires": [
+            [
+                "f2890d06.d2ff3"
+            ]
+        ]
+    },
+    {
+        "id": "f2890d06.d2ff3",
+        "type": "mongodb in",
+        "z": "e81a1bd5.1a5588",
+        "mongodb": "463a50e3.7546d",
+        "name": "Find Controller Config DB",
+        "collection": "configs",
+        "operation": "find",
+        "x": 750,
+        "y": 460,
+        "wires": [
+            [
+                "7ab39907.924768"
+            ]
+        ]
+    },
+    {
+        "id": "7ab39907.924768",
+        "type": "function",
+        "z": "e81a1bd5.1a5588",
+        "name": "Create Controller Config",
+        "func": "if(msg.payload.length > 0) {\n    var outputMsgs = [];\n    msg.payload = msg.payload[0];\n    const topicGen = \"MoisturizeMe/controllers/configs/\";\n    const controllerId = msg.payload.controller.id;\n    Object.keys(msg.payload.controller).forEach((item) => {\n        const topic = `${topicGen}${controllerId}/controller/${item}`;\n        const payload = msg.payload.controller[item];\n        outputMsgs.push({topic, payload});\n    });\n    msg.payload.moisturizers.forEach((moisturizer) => {\n        const topic = `${topicGen}${controllerId}/moisturizers/${moisturizer.id}`;\n        const payload = [];\n        Object.keys(moisturizer).forEach((item) => {\n            if(item !== \"id\"){\n                payload.push(moisturizer[item]);\n            }\n        });\n        outputMsgs.push({topic, payload});\n    });\n    return [outputMsgs];\n}\n",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 1010,
+        "y": 460,
+        "wires": [
+            [
+                "519929a3.1700b8"
+            ]
+        ]
+    },
+    {
+        "id": "519929a3.1700b8",
+        "type": "mqtt out",
+        "z": "e81a1bd5.1a5588",
+        "name": "Broadcast MQTT",
+        "topic": "",
+        "qos": "2",
+        "retain": "true",
+        "broker": "e5d65b2b.e8ca58",
+        "x": 1250,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "3204833.7a3bf7c",
+        "type": "inject",
+        "z": "e81a1bd5.1a5588",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 450,
+        "y": 540,
+        "wires": [
+            [
+                "f2890d06.d2ff3"
+            ]
+        ]
+    },
+    {
+        "id": "463a50e3.7546d",
+        "type": "mongodb",
+        "z": "",
+        "hostname": "localhost",
+        "topology": "direct",
+        "connectOptions": "authSource=admin",
+        "port": "27017",
+        "db": "moisturizeMe",
+        "name": ""
+    },
+    {
+        "id": "e5d65b2b.e8ca58",
+        "type": "mqtt-broker",
+        "z": "",
+        "name": "",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": false,
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    }
+]
