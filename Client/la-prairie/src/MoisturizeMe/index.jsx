@@ -8,8 +8,6 @@ function MoisturizeMe() {
        <>
         <Appbar.Header>
             <Appbar.Content title="La Prairie" subtitle="MoisturizeMe" />
-            <Appbar.Action icon="magnify" onPress={_handleSearch} />
-            <Appbar.Action icon="dots-vertical" onPress={_handleMore} />
         </Appbar.Header>
        </>
     )
