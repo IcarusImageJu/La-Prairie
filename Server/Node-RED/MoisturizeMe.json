@@ -173,33 +173,171 @@
         "wires": []
     },
     {
-        "id": "3204833.7a3bf7c",
-        "type": "inject",
+        "id": "427902f.6c6dcfc",
+        "type": "http in",
         "z": "e81a1bd5.1a5588",
         "name": "",
-        "props": [
-            {
-                "p": "payload"
-            },
-            {
-                "p": "topic",
-                "vt": "str"
-            }
-        ],
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "topic": "",
-        "payload": "",
-        "payloadType": "date",
-        "x": 450,
-        "y": 540,
+        "url": "moisturizeme/controllers",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 620,
         "wires": [
             [
-                "f2890d06.d2ff3"
+                "b29abb64.bfa6b8"
             ]
         ]
+    },
+    {
+        "id": "b29abb64.bfa6b8",
+        "type": "mongodb in",
+        "z": "e81a1bd5.1a5588",
+        "mongodb": "463a50e3.7546d",
+        "name": "",
+        "collection": "controllers",
+        "operation": "find",
+        "x": 440,
+        "y": 620,
+        "wires": [
+            [
+                "b8ac5ed0.0a7bf"
+            ]
+        ]
+    },
+    {
+        "id": "8e94777.363bd88",
+        "type": "http in",
+        "z": "e81a1bd5.1a5588",
+        "name": "",
+        "url": "moisturizeme/configs",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 130,
+        "y": 740,
+        "wires": [
+            [
+                "914fc7a1.f8ac68"
+            ]
+        ]
+    },
+    {
+        "id": "914fc7a1.f8ac68",
+        "type": "mongodb in",
+        "z": "e81a1bd5.1a5588",
+        "mongodb": "463a50e3.7546d",
+        "name": "",
+        "collection": "configs",
+        "operation": "find",
+        "x": 490,
+        "y": 740,
+        "wires": [
+            [
+                "b289994b.f2aff8"
+            ]
+        ]
+    },
+    {
+        "id": "86300dc9.36f72",
+        "type": "http in",
+        "z": "e81a1bd5.1a5588",
+        "name": "",
+        "url": "moisturizeme/controllers/:id",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 680,
+        "wires": [
+            [
+                "3b0fbf79.de79c"
+            ]
+        ]
+    },
+    {
+        "id": "f1229270.c02d9",
+        "type": "mongodb in",
+        "z": "e81a1bd5.1a5588",
+        "mongodb": "463a50e3.7546d",
+        "name": "",
+        "collection": "controllers",
+        "operation": "find",
+        "x": 640,
+        "y": 680,
+        "wires": [
+            [
+                "70e9f4e7.a86d0c",
+                "8abf653c.f7d5a8"
+            ]
+        ]
+    },
+    {
+        "id": "3b0fbf79.de79c",
+        "type": "function",
+        "z": "e81a1bd5.1a5588",
+        "name": "",
+        "func": "const payload = {_id: `${msg.req.params.id}`};\nmsg.payload = payload;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 390,
+        "y": 680,
+        "wires": [
+            [
+                "f1229270.c02d9"
+            ]
+        ]
+    },
+    {
+        "id": "70e9f4e7.a86d0c",
+        "type": "http response",
+        "z": "e81a1bd5.1a5588",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 900,
+        "y": 680,
+        "wires": []
+    },
+    {
+        "id": "b8ac5ed0.0a7bf",
+        "type": "http response",
+        "z": "e81a1bd5.1a5588",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 690,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "b289994b.f2aff8",
+        "type": "http response",
+        "z": "e81a1bd5.1a5588",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 710,
+        "y": 740,
+        "wires": []
+    },
+    {
+        "id": "8abf653c.f7d5a8",
+        "type": "debug",
+        "z": "e81a1bd5.1a5588",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 900,
+        "y": 760,
+        "wires": []
     },
     {
         "id": "463a50e3.7546d",
