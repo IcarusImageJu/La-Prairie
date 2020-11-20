@@ -3,7 +3,11 @@
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { DefaultTheme, Provider as PaperProvider } from 'react-native-paper';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import App from './src/App';
+
+dayjs.extend(relativeTime);
 
 const darkJungleGreen = '#001514';
 const white = '#FBFFFE';
