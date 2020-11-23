@@ -33,7 +33,7 @@ function MoisturizeMe() {
         refreshing={loading}
         keyExtractor={(item) => item._id}
         data={controllers}
-        renderItem={({ item }) => <Tile controller={item} />}
+        renderItem={({ item }) => <Tile key={loading} controller={item} />}
       />
     </>
   );
