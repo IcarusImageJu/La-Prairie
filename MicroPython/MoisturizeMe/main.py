@@ -86,7 +86,7 @@ class Moisturizer:
                     '{"valveTimer": ' + str(self.valveTimer) + "}",
                 )
             if (self.lastTake - self.value > self.minDelta) or (
-                self.lastTake - self.value < self.minDelta
+                self.lastTake - self.value < -self.minDelta
             ):
                 self.lastTake = self.value
                 client.publish("MoisturizeMe/values/" + self.id, str(self.value))
