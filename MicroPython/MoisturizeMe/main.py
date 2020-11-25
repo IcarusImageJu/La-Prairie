@@ -1,9 +1,17 @@
 import ujson
+import utime
+from machine import Pin, ADC
 
 moisturizers = []
 
 
 class Moisturizer:
+
+    timeBetweenWatering = 1 * 60 * 60 * 1000
+    timeBetweenTake = 5 * 60 * 1000
+    sensorTake = 3
+    minDelta = 2
+
     def __init__(
         self,
         id,
@@ -16,22 +24,86 @@ class Moisturizer:
         name,
     ):
         self.id = id
-        self.sensorPin = sensorPin
+        self.sensorPin = ADC(Pin(35))
         self.waterValue = waterValue
         self.airValue = airValue
         self.minMoistRatio = minMoistRatio
-        self.valvePin = valvePin
+        self.valvePin = machine.Pin(valvePin)
         self.valveTimer = valveTimer
         self.name = name
+        self.lastWatering = utime.ticks_ms()
+        self.canWater = False
+        self.askWater = False
+        self.value = 0
+        self.lastTake = 0
+        self.timeTake = 0
+
+    def readSensor(self):
+        self.sensorPin.atten(ADC.ATTN_11DB)
+        self.sensorPin.width(ADC.WIDTH_9BIT)
+        acc = 0
+        for i in range(self.sensorTake):
+            acc += 100 - (
+                (
+                    (self.sensorPin.read() - self.waterValue)
+                    / (self.airValue - self.waterValue)
+                )
+                * 100
+            )
+            time.sleep_ms(150)
+        self.value = acc / self.sensorTake
+        if self.lastTake == 0:
+            self.lastTake = self.value
+
+    def loop(self):
+        canTake = False
+        deltaTake = utime.ticks_add(self.timeTake, self.timeBetweenTake)
+        if utime.ticks_diff(utime.ticks_ms(), deltaTake) > 0 or self.timeTake == 0:
+            self.timeTake = utime.ticks_ms()
+            canTake = True
+        if canTake:
+            self.readSensor()
+            client.publish("MoisturizeMe/raw/" + self.id, str(self.value))
+            if self.value < self.minMoistRatio:
+                self.askWater = True
+                client.publish(
+                    "MoisturizeMe/askWater/" + self.id,
+                    '{"minMoistRatio": '
+                    + str(self.minMoistRatio)
+                    + ', "value": '
+                    + str(self.value)
+                    + "}",
+                )
+            deltaTimer = utime.ticks_add(self.lastWatering, self.timeBetweenWatering)
+            if utime.ticks_diff(utime.ticks_ms(), deltaTimer) > 0:
+                self.canWater = True
+            if self.askWater and self.canWater:
+                time.sleep_ms(self.valveTimer)
+                self.lastWatering = utime.ticks_ms()
+                self.canWater = False
+                client.publish(
+                    "MoisturizeMe/watering/" + self.id,
+                    '{"valveTimer": ' + str(self.valveTimer) + "}",
+                )
+            if (self.lastTake - self.value > self.minDelta) or (
+                self.lastTake - self.value < self.minDelta
+            ):
+                self.lastTake = self.value
+                client.publish("MoisturizeMe/values/" + self.id, str(self.value))
 
 
 def sub_cb(topic, msg):
     if b"moisturizers/" in topic:
-        id = str(topic).split('/')[len(str(topic).split('/')) - 1].split("'")[0]
+        id = str(topic).split("/")[len(str(topic).split("/")) - 1].split("'")[0]
         o = ujson.loads(msg)
-        moisturizer = Moisturizer(str(id), str(o[0]), str(0[1]), str(o[2]), str(o[3]), str(o[4]), str(o[5]), str(o[6]), str(o[7]))
-        moisturizers.append(moisturizer)
-        print(moisturizers)
+        moisturizer = Moisturizer(id, o[0], o[1], o[2], o[3], o[4], o[5], o[6])
+        isNew = True
+        for i in range(len(moisturizers)):
+            if moisturizers[i].id == id:
+                moisturizers[i] = moisturizer
+                isNew = False
+        if isNew:
+            moisturizers.append(moisturizer)
     print((topic, msg))
 
 
@@ -60,6 +132,8 @@ except OSError as e:
     restart_and_reconnect()
 
 while True:
+    for moisturizer in moisturizers:
+        moisturizer.loop()
     try:
         new_message = client.check_msg()
     except OSError as e:
