@@ -1,6 +1,15 @@
 import ujson
 import utime
 from machine import Pin, ADC
+import os
+
+moisturizersConfigs = []
+persisted = open("moisturizers.json")
+try:
+    persistedRead = ujson.loads(persisted.read())
+except OSError as e:
+    persistedRead = []
+
 
 moisturizers = []
 
@@ -92,18 +101,30 @@ class Moisturizer:
                 client.publish("MoisturizeMe/values/" + self.id, str(self.value))
 
 
+if len(persistedRead) > 0:
+    for o in persistedRead:
+        moisturizer = Moisturizer(o[7], o[0], o[1], o[2], o[3], o[4], o[5], o[6])
+        moisturizers.append(moisturizer)
+        moisturizersConfigs.append(o)
+
+
 def sub_cb(topic, msg):
     if b"moisturizers/" in topic:
         id = str(topic).split("/")[len(str(topic).split("/")) - 1].split("'")[0]
         o = ujson.loads(msg)
-        moisturizer = Moisturizer(id, o[0], o[1], o[2], o[3], o[4], o[5], o[6])
+        o.append(id)
+        moisturizer = Moisturizer(o[7], o[0], o[1], o[2], o[3], o[4], o[5], o[6])
         isNew = True
         for i in range(len(moisturizers)):
             if moisturizers[i].id == id:
                 moisturizers[i] = moisturizer
+                moisturizersConfigs[i] = o
                 isNew = False
         if isNew:
             moisturizers.append(moisturizer)
+            moisturizersConfigs.append(o)
+        persistence = open("moisturizers.json", "w")
+        ujson.dump(moisturizersConfigs, persistence)
     print((topic, msg))
 
 
